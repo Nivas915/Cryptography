@@ -1,0 +1,66 @@
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+
+#define ALPHABET_SIZE 26
+#define MAX_LEN 100
+
+void generateCipherAlphabet(const char *keyword, char *cipherAlphabet) {
+    int used[ALPHABET_SIZE] = {0};
+    int index = 0;
+    
+    for (int i = 0; i < strlen(keyword); i++) {
+        char c = toupper(keyword[i]);
+        if (isalpha(c) && !used[c - 'A']) {
+            cipherAlphabet[index++] = c;
+            used[c - 'A'] = 1;
+        }
+    }
+
+    for (char c = 'A'; c <= 'Z'; c++) {
+        if (!used[c - 'A']) {
+            cipherAlphabet[index++] = c;
+        }
+    }
+    cipherAlphabet[index] = '\0';
+}
+
+void encryptDecrypt(const char *input, const char *cipherAlphabet, char *output, int mode) {
+    char normalAlphabet[ALPHABET_SIZE] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    char *keyAlphabet = (mode == 0) ? cipherAlphabet : normalAlphabet;
+    char *reverseKeyAlphabet = (mode == 0) ? normalAlphabet : cipherAlphabet;
+
+    for (int i = 0; input[i] != '\0'; i++) {
+        char c = toupper(input[i]);
+        if (isalpha(c)) {
+            int index = strchr(keyAlphabet, c) - keyAlphabet;
+            output[i] = mode == 0 ? cipherAlphabet[index] : normalAlphabet[index];
+        } else {
+            output[i] = input[i];
+        }
+    }
+    output[strlen(input)] = '\0';
+}
+
+int main() {
+    char keyword[MAX_LEN], plaintext[MAX_LEN], ciphertext[MAX_LEN], decryptedText[MAX_LEN];
+    char cipherAlphabet[ALPHABET_SIZE + 1];
+
+    printf("Enter the keyword: ");
+    fgets(keyword, sizeof(keyword), stdin);
+    keyword[strcspn(keyword, "\n")] = '\0';
+
+    generateCipherAlphabet(keyword, cipherAlphabet);
+
+    printf("Enter the plaintext: ");
+    fgets(plaintext, sizeof(plaintext), stdin);
+    plaintext[strcspn(plaintext, "\n")] = '\0';
+
+    encryptDecrypt(plaintext, cipherAlphabet, ciphertext, 0);
+    printf("Ciphertext: %s\n", ciphertext);
+
+    encryptDecrypt(ciphertext, cipherAlphabet, decryptedText, 1);
+    printf("Decrypted Text: %s\n", decryptedText);
+
+    return 0;
+}
