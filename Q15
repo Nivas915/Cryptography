@@ -1,0 +1,105 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+
+#define ALPHABET_SIZE 26
+#define TOP_N 10
+
+// Function to count letter frequencies in a text
+void countFrequencies(const char *text, int *freq) {
+    memset(freq, 0, ALPHABET_SIZE * sizeof(int));
+    for (int i = 0; text[i] != '\0'; i++) {
+        if (isalpha(text[i])) {
+            char c = tolower(text[i]);
+            freq[c - 'a']++;
+        }
+    }
+}
+
+// Function to score a plaintext based on letter frequencies
+double scoreText(const int *freq) {
+    double score = 0.0;
+    // Example frequencies for English letters (just a rough approximation)
+    const double englishFreq[ALPHABET_SIZE] = {
+        0.082, 0.015, 0.028, 0.043, 0.127, 0.022, 0.020, 0.061, 0.070, 0.001,
+        0.005, 0.040, 0.024, 0.067, 0.077, 0.020, 0.001, 0.060, 0.063, 0.091,
+        0.028, 0.010, 0.020, 0.001, 0.020, 0.002
+    };
+    int totalLetters = 0;
+    for (int i = 0; i < ALPHABET_SIZE; i++) {
+        totalLetters += freq[i];
+    }
+    for (int i = 0; i < ALPHABET_SIZE; i++) {
+        double observed = (double)freq[i] / totalLetters;
+        score += observed * englishFreq[i];
+    }
+    return score;
+}
+
+// Function to decrypt the ciphertext using a given shift
+void decryptCaesar(const char *ciphertext, int shift, char *plaintext) {
+    int textLength = strlen(ciphertext);
+    for (int i = 0; i < textLength; i++) {
+        if (isalpha(ciphertext[i])) {
+            char base = islower(ciphertext[i]) ? 'a' : 'A';
+            plaintext[i] = ((ciphertext[i] - base - shift + ALPHABET_SIZE) % ALPHABET_SIZE) + base;
+        } else {
+            plaintext[i] = ciphertext[i];
+        }
+    }
+    plaintext[textLength] = '\0';  // Null-terminate the plaintext string
+}
+
+// Function to perform a letter frequency attack on an additive cipher
+void frequencyAttack(const char *ciphertext, int topN) {
+    int freq[ALPHABET_SIZE];
+    double scores[ALPHABET_SIZE];
+    char plaintext[1024];  // Adjust size as needed
+    char possiblePlaintexts[TOP_N][1024];
+    int shifts[TOP_N];
+    
+    // Initialize arrays
+    for (int i = 0; i < ALPHABET_SIZE; i++) {
+        scores[i] = 0.0;
+    }
+
+    // Try all possible shifts
+    for (int shift = 0; shift < ALPHABET_SIZE; shift++) {
+        decryptCaesar(ciphertext, shift, plaintext);
+        countFrequencies(plaintext, freq);
+        double score = scoreText(freq);
+        scores[shift] = score;
+    }
+
+    // Find the top N shifts
+    for (int i = 0; i < topN; i++) {
+        double maxScore = -1.0;
+        int bestShift = -1;
+        for (int shift = 0; shift < ALPHABET_SIZE; shift++) {
+            if (scores[shift] > maxScore) {
+                maxScore = scores[shift];
+                bestShift = shift;
+            }
+        }
+        // Store the best shift
+        decryptCaesar(ciphertext, bestShift, possiblePlaintexts[i]);
+        shifts[i] = bestShift;
+        scores[bestShift] = -1.0;  // Mark as used
+    }
+
+    // Output the top N possible plaintexts
+    printf("Top %d possible plaintexts:\n", topN);
+    for (int i = 0; i < topN; i++) {
+        printf("Shift %d: %s\n", shifts[i], possiblePlaintexts[i]);
+    }
+}
+
+int main() {
+    const char *ciphertext = "your ciphertext here";  // Replace with actual ciphertext
+    int topN = TOP_N;  // Number of top possible plaintexts to display
+
+    frequencyAttack(ciphertext, topN);
+
+    return 0;
+}
