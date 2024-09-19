@@ -1,0 +1,31 @@
+#include <stdio.h>
+#include <ctype.h>
+
+int main() {
+    char text[100];
+    int k, i = 0;
+    
+    printf("Enter the text: ");
+    fgets(text, sizeof(text), stdin);
+    printf("Enter the shift value (1-25): ");
+    scanf("%d", &k);
+    
+    if (k < 1 || k > 25) {
+        printf("Invalid shift value!\n");
+        return 1;
+    }
+    
+    while (text[i] != '\0') {
+        char ch = text[i];
+
+        if (isalpha(ch)) {
+            char base = isupper(ch) ? 'A' : 'a'; 
+			ch = ((ch - base + k) % 26) + base;   
+			}
+        
+        putchar(ch);
+        i++;
+    }
+    
+    return 0;
+}
