@@ -1,0 +1,113 @@
+#include <stdio.h>
+#include <stdint.h>
+#include <string.h>
+
+// Define the number of rounds in DES
+#define DES_ROUNDS 16
+
+// DES initial permutation table
+const int IP[64] = { /* Initial permutation table */ };
+
+// DES final permutation table (inverse of IP)
+const int IP_INV[64] = { /* Final permutation table */ };
+
+// DES expansion permutation table
+const int E[48] = { /* Expansion table */ };
+
+// DES S-boxes
+const int S_BOX[8][4][16] = { /* S-boxes */ };
+
+// DES permutation table after S-boxes
+const int P[32] = { /* P permutation table */ };
+
+// DES key schedule shift schedule for decryption
+const int SHIFT_SCHEDULE[DES_ROUNDS] = { /* Shift schedule for decryption */ };
+
+// Function prototypes
+void permute(uint64_t *data, const int *table, int table_size);
+void xor_with_key(uint64_t *data, const uint64_t *key);
+void des_f(uint64_t *data, const uint64_t *key);
+void generate_subkeys(const uint64_t *key, uint64_t subkeys[DES_ROUNDS]);
+void des_decrypt(const uint64_t *ciphertext, const uint64_t subkeys[DES_ROUNDS], uint64_t *plaintext);
+
+int main() {
+    uint64_t key = 0x133457799BBCDFF1; // Example key
+    uint64_t ciphertext = 0x01A1A1A1A1A1A1A1; // Example ciphertext
+    uint64_t plaintext;
+    uint64_t subkeys[DES_ROUNDS];
+
+    generate_subkeys(&key, subkeys);
+
+    // Perform DES decryption
+    des_decrypt(&ciphertext, subkeys, &plaintext);
+
+    printf("Plaintext: 0x%016lX\n", plaintext);
+
+    return 0;
+}
+
+void permute(uint64_t *data, const int *table, int table_size) {
+    uint64_t temp = 0;
+    for (int i = 0; i < table_size; i++) {
+        if (*data & (1ULL << (64 - table[i]))) {
+            temp |= (1ULL << (table_size - 1 - i));
+        }
+    }
+    *data = temp;
+}
+
+void xor_with_key(uint64_t *data, const uint64_t *key) {
+    *data ^= *key;
+}
+
+void des_f(uint64_t *data, const uint64_t *key) {
+    // Expansion permutation
+    uint64_t expanded = 0;
+    permute(&expanded, E, 48);
+
+    // XOR with key
+    xor_with_key(&expanded, key);
+
+    // S-boxes and P permutation
+    // (Implement S-box substitution and permutation)
+
+    // XOR with left half of the data
+    *data ^= expanded;
+}
+
+void generate_subkeys(const uint64_t *key, uint64_t subkeys[DES_ROUNDS]) {
+    uint64_t current_key = *key;
+    // Perform initial key schedule
+    for (int round = 0; round < DES_ROUNDS; round++) {
+        // Shift key
+        // (Implement key shifting based on SHIFT_SCHEDULE)
+
+        // Generate subkey for this round
+        // (Implement subkey generation)
+        subkeys[round] = current_key;
+    }
+}
+
+void des_decrypt(const uint64_t *ciphertext, const uint64_t subkeys[DES_ROUNDS], uint64_t *plaintext) {
+    uint64_t data = *ciphertext;
+
+    // Initial permutation
+    permute(&data, IP, 64);
+
+    // Split into left and right halves
+    uint64_t left = data >> 32;
+    uint64_t right = data & 0xFFFFFFFF;
+
+    // 16 rounds of decryption
+    for (int round = DES_ROUNDS - 1; round >= 0; round--) {
+        uint64_t temp = right;
+        right = left ^ des_f(&right, &subkeys[round]);
+        left = temp;
+    }
+
+    // Combine halves and apply final permutation
+    data = (left << 32) | right;
+    permute(&data, IP_INV, 64);
+
+    *plaintext = data;
+}
