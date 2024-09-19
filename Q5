@@ -1,0 +1,49 @@
+#include <stdio.h>
+#include <ctype.h>
+#include <string.h>
+
+#define ALPHABET_SIZE 26
+
+int modInverse(int a, int m) {
+    for (int x = 1; x < m; x++) {
+        if ((a * x) % m == 1) {
+            return x;
+        }
+    }
+    return -1;
+}
+
+int main() {
+    char plaintext[100], ciphertext[100];
+    int a, b;
+    int i;
+
+    printf("Enter the plaintext: ");
+    fgets(plaintext, sizeof(plaintext), stdin);
+    plaintext[strcspn(plaintext, "\n")] = '\0';
+
+    printf("Enter the value of a (must be coprime with %d): ", ALPHABET_SIZE);
+    scanf("%d", &a);
+
+    printf("Enter the value of b: ");
+    scanf("%d", &b);
+
+    if (a <= 0 || a >= ALPHABET_SIZE || modInverse(a, ALPHABET_SIZE) == -1) {
+        printf("Invalid value for a. It must be between 1 and %d and have a modular inverse.\n", ALPHABET_SIZE - 1);
+        return 1;
+    }
+
+    for (i = 0; plaintext[i] != '\0'; i++) {
+        if (isalpha(plaintext[i])) {
+            char base = isupper(plaintext[i]) ? 'A' : 'a';
+            ciphertext[i] = ((a * (plaintext[i] - base) + b) % ALPHABET_SIZE + ALPHABET_SIZE) % ALPHABET_SIZE + base;
+        } else {
+            ciphertext[i] = plaintext[i];
+        }
+    }
+    ciphertext[i] = '\0';
+
+    printf("Ciphertext: %s\n", ciphertext);
+
+    return 0;
+}
