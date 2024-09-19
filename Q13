@@ -1,0 +1,106 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+#define MATRIX_SIZE 2
+#define MOD 26
+
+// Function to find the inverse of a matrix modulo 26
+void inverseMatrix(int matrix[MATRIX_SIZE][MATRIX_SIZE], int inverseMatrix[MATRIX_SIZE][MATRIX_SIZE]) {
+    int determinant = (matrix[0][0] * matrix[1][1] - matrix[0][1] * matrix[1][0] + MOD) % MOD;
+    int invDet = 0;
+
+    for (int i = 0; i < MOD; i++) {
+        if ((determinant * i) % MOD == 1) {
+            invDet = i;
+            break;
+        }
+    }
+
+    inverseMatrix[0][0] = matrix[1][1] * invDet % MOD;
+    inverseMatrix[0][1] = -matrix[0][1] * invDet % MOD;
+    inverseMatrix[1][0] = -matrix[1][0] * invDet % MOD;
+    inverseMatrix[1][1] = matrix[0][0] * invDet % MOD;
+
+    for (int i = 0; i < MATRIX_SIZE; i++) {
+        for (int j = 0; j < MATRIX_SIZE; j++) {
+            if (inverseMatrix[i][j] < 0) {
+                inverseMatrix[i][j] += MOD;
+            }
+        }
+    }
+}
+
+// Function to perform matrix multiplication
+void matrixMultiply(int keyMatrix[MATRIX_SIZE][MATRIX_SIZE], int textMatrix[MATRIX_SIZE], int resultMatrix[MATRIX_SIZE]) {
+    for (int i = 0; i < MATRIX_SIZE; i++) {
+        resultMatrix[i] = 0;
+        for (int j = 0; j < MATRIX_SIZE; j++) {
+            resultMatrix[i] += keyMatrix[i][j] * textMatrix[j];
+        }
+        resultMatrix[i] %= MOD;
+    }
+}
+
+// Function to find the key matrix from known plaintext and ciphertext pairs
+void findKeyMatrix(int plaintextPairs[2][MATRIX_SIZE], int ciphertextPairs[2][MATRIX_SIZE], int keyMatrix[MATRIX_SIZE][MATRIX_SIZE]) {
+    int A[2][2] = { { plaintextPairs[0][0], plaintextPairs[0][1] },
+                    { plaintextPairs[1][0], plaintextPairs[1][1] } };
+    int B[2][2] = { { ciphertextPairs[0][0], ciphertextPairs[0][1] },
+                    { ciphertextPairs[1][0], ciphertextPairs[1][1] } };
+    int A_inv[2][2];
+    int B_matrix[2][2];
+
+    // Calculate the inverse of matrix A
+    inverseMatrix(A, A_inv);
+
+    // Multiply A_inv with B to get the key matrix
+    matrixMultiply(A_inv, B[0], B_matrix[0]);
+    matrixMultiply(A_inv, B[1], B_matrix[1]);
+
+    // Key matrix is the result of multiplying A_inv with B
+    keyMatrix[0][0] = B_matrix[0][0];
+    keyMatrix[0][1] = B_matrix[0][1];
+    keyMatrix[1][0] = B_matrix[1][0];
+    keyMatrix[1][1] = B_matrix[1][1];
+}
+
+// Function to decrypt using the key matrix
+void decryptHillCipher(const char *ciphertext, const int keyMatrix[MATRIX_SIZE][MATRIX_SIZE], char *plaintext) {
+    int length = strlen(ciphertext);
+    int textMatrix[MATRIX_SIZE], resultMatrix[MATRIX_SIZE];
+    int inverseKeyMatrix[MATRIX_SIZE][MATRIX_SIZE];
+
+    // Compute the inverse of the key matrix
+    inverseMatrix(keyMatrix, inverseKeyMatrix);
+
+    // Decrypt the ciphertext
+    for (int i = 0; i < length; i += 2) {
+        textMatrix[0] = ciphertext[i] - 'A';
+        textMatrix[1] = ciphertext[i + 1] - 'A';
+        matrixMultiply(inverseKeyMatrix, textMatrix, resultMatrix);
+        plaintext[i] = resultMatrix[0] + 'A';
+        plaintext[i + 1] = resultMatrix[1] + 'A';
+    }
+    plaintext[length] = '\0';
+}
+
+int main() {
+    int plaintextPairs[2][MATRIX_SIZE] = { { 12, 4 }, { 19, 22 } }; 
+    int ciphertextPairs[2][MATRIX_SIZE] = { { 8, 12 }, { 15, 6 } }; 
+    int keyMatrix[MATRIX_SIZE][MATRIX_SIZE];
+    char ciphertext[] = "IKJCSJ"; // Example ciphertext
+    char decryptedText[sizeof(ciphertext)];
+
+    // Find the key matrix
+    findKeyMatrix(plaintextPairs, ciphertextPairs, keyMatrix);
+
+    printf("Key Matrix:\n");
+    printf("%d %d\n", keyMatrix[0][0], keyMatrix[0][1]);
+    printf("%d %d\n", keyMatrix[1][0], keyMatrix[1][1]);
+
+    // Decrypt the ciphertext
+    decryptHillCipher(ciphertext, keyMatrix, decryptedText);
+    printf("Decrypted text: %s\n", decryptedText);
+
+    return 0;
+}
