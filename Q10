@@ -1,0 +1,89 @@
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+
+#define MATRIX_SIZE 5
+#define MAX_LEN 200
+
+void formatText(char *text) {
+    int length = strlen(text);
+    for (int i = 0; i < length; i++) {
+        if (text[i] == ' ') {
+            memmove(&text[i], &text[i + 1], length - i);
+            length--;
+            i--;
+        }
+    }
+    for (int i = 0; i < length; i++) {
+        text[i] = toupper(text[i]);
+        if (text[i] == 'J') {
+            text[i] = 'I';
+        }
+    }
+    if (length % 2 != 0) {
+        memmove(&text[length], &text[length - 1], 1);
+        text[length] = 'X';
+        text[length + 1] = '\0';
+    }
+}
+
+void generatePlayfairMatrix(char matrix[MATRIX_SIZE][MATRIX_SIZE]) {
+    char keyMatrix[MATRIX_SIZE][MATRIX_SIZE] = {
+        {'M', 'F', 'H', 'I', 'K'},
+        {'U', 'N', 'O', 'P', 'Q'},
+        {'Z', 'V', 'W', 'X', 'Y'},
+        {'E', 'L', 'A', 'R', 'G'},
+        {'D', 'S', 'T', 'B', 'C'}
+    };
+    
+    memcpy(matrix, keyMatrix, sizeof(keyMatrix));
+}
+
+void encryptPlayfair(const char *plaintext, const char matrix[MATRIX_SIZE][MATRIX_SIZE], char *ciphertext) {
+    int length = strlen(plaintext);
+    for (int i = 0; i < length; i += 2) {
+        char a = plaintext[i];
+        char b = plaintext[i + 1];
+        int row1, col1, row2, col2;
+
+        for (row1 = 0; row1 < MATRIX_SIZE; row1++) {
+            for (col1 = 0; col1 < MATRIX_SIZE; col1++) {
+                if (matrix[row1][col1] == a) break;
+            }
+            if (col1 < MATRIX_SIZE) break;
+        }
+
+        for (row2 = 0; row2 < MATRIX_SIZE; row2++) {
+            for (col2 = 0; col2 < MATRIX_SIZE; col2++) {
+                if (matrix[row2][col2] == b) break;
+            }
+            if (col2 < MATRIX_SIZE) break;
+        }
+
+        if (row1 == row2) {
+            ciphertext[i] = matrix[row1][(col1 + 1) % MATRIX_SIZE];
+            ciphertext[i + 1] = matrix[row2][(col2 + 1) % MATRIX_SIZE];
+        } else if (col1 == col2) {
+            ciphertext[i] = matrix[(row1 + 1) % MATRIX_SIZE][col1];
+            ciphertext[i + 1] = matrix[(row2 + 1) % MATRIX_SIZE][col2];
+        } else {
+            ciphertext[i] = matrix[row1][col2];
+            ciphertext[i + 1] = matrix[row2][col1];
+        }
+    }
+    ciphertext[length] = '\0';
+}
+
+int main() {
+    char plaintext[MAX_LEN] = "Must see you over Cadogan West. Coming at once";
+    char ciphertext[MAX_LEN];
+    char matrix[MATRIX_SIZE][MATRIX_SIZE];
+
+    formatText(plaintext);
+    generatePlayfairMatrix(matrix);
+    encryptPlayfair(plaintext, matrix, ciphertext);
+
+    printf("Ciphertext: %s\n", ciphertext);
+
+    return 0;
+}
