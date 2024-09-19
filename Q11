@@ -1,0 +1,13 @@
+#include <stdio.h>
+#include <math.h>
+
+#define FACTORIAL(n) ((n) <= 1 ? 1 : (n) * FACTORIAL((n) - 1))
+
+int main() {
+    double totalKeys = FACTORIAL(25);
+    printf("Total number of possible keys (25!): %.0f\n", totalKeys);
+    double uniqueKeysEstimate = totalKeys / 1e8;
+    printf("Approximate number of effectively unique keys: %.0f\n", uniqueKeysEstimate);
+
+    return 0;
+}
