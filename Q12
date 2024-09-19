@@ -1,0 +1,101 @@
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+
+#define MATRIX_SIZE 2
+#define MOD 26
+
+void formatText(char *text) {
+    int length = strlen(text);
+    for (int i = 0; i < length; i++) {
+        if (text[i] == ' ') {
+            memmove(&text[i], &text[i + 1], length - i);
+            length--;
+            i--;
+        }
+        text[i] = toupper(text[i]);
+    }
+}
+
+void matrixMultiply(int keyMatrix[MATRIX_SIZE][MATRIX_SIZE], int textMatrix[MATRIX_SIZE], int resultMatrix[MATRIX_SIZE]) {
+    for (int i = 0; i < MATRIX_SIZE; i++) {
+        resultMatrix[i] = 0;
+        for (int j = 0; j < MATRIX_SIZE; j++) {
+            resultMatrix[i] += keyMatrix[i][j] * textMatrix[j];
+        }
+        resultMatrix[i] %= MOD;
+    }
+}
+
+void encryptHillCipher(const char *plaintext, const int keyMatrix[MATRIX_SIZE][MATRIX_SIZE], char *ciphertext) {
+    int length = strlen(plaintext);
+    int textMatrix[MATRIX_SIZE], resultMatrix[MATRIX_SIZE];
+    
+    for (int i = 0; i < length; i += 2) {
+        textMatrix[0] = plaintext[i] - 'A';
+        textMatrix[1] = plaintext[i + 1] - 'A';
+        matrixMultiply(keyMatrix, textMatrix, resultMatrix);
+        ciphertext[i] = resultMatrix[0] + 'A';
+        ciphertext[i + 1] = resultMatrix[1] + 'A';
+    }
+    ciphertext[length] = '\0';
+}
+
+void inverseMatrix(int matrix[MATRIX_SIZE][MATRIX_SIZE], int inverseMatrix[MATRIX_SIZE][MATRIX_SIZE]) {
+    int determinant = (matrix[0][0] * matrix[1][1] - matrix[0][1] * matrix[1][0] + MOD) % MOD;
+    int invDet = 0;
+    
+    for (int i = 0; i < MOD; i++) {
+        if ((determinant * i) % MOD == 1) {
+            invDet = i;
+            break;
+        }
+    }
+
+    inverseMatrix[0][0] = matrix[1][1] * invDet % MOD;
+    inverseMatrix[0][1] = -matrix[0][1] * invDet % MOD;
+    inverseMatrix[1][0] = -matrix[1][0] * invDet % MOD;
+    inverseMatrix[1][1] = matrix[0][0] * invDet % MOD;
+
+    for (int i = 0; i < MATRIX_SIZE; i++) {
+        for (int j = 0; j < MATRIX_SIZE; j++) {
+            if (inverseMatrix[i][j] < 0) {
+                inverseMatrix[i][j] += MOD;
+            }
+        }
+    }
+}
+
+void decryptHillCipher(const char *ciphertext, const int keyMatrix[MATRIX_SIZE][MATRIX_SIZE], char *plaintext) {
+    int length = strlen(ciphertext);
+    int textMatrix[MATRIX_SIZE], resultMatrix[MATRIX_SIZE];
+    int inverseKeyMatrix[MATRIX_SIZE][MATRIX_SIZE];
+    
+    inverseMatrix(keyMatrix, inverseKeyMatrix);
+    
+    for (int i = 0; i < length; i += 2) {
+        textMatrix[0] = ciphertext[i] - 'A';
+        textMatrix[1] = ciphertext[i + 1] - 'A';
+        matrixMultiply(inverseKeyMatrix, textMatrix, resultMatrix);
+        plaintext[i] = resultMatrix[0] + 'A';
+        plaintext[i + 1] = resultMatrix[1] + 'A';
+    }
+    plaintext[length] = '\0';
+}
+
+int main() {
+    const char *message = "meet me at the usual place at ten rather than eight oclock";
+    int keyMatrix[MATRIX_SIZE][MATRIX_SIZE] = { {9, 4}, {5, 7} };
+    char formattedMessage[MAX_LEN], ciphertext[MAX_LEN], decryptedText[MAX_LEN];
+    
+    strcpy(formattedMessage, message);
+    formatText(formattedMessage);
+    
+    encryptHillCipher(formattedMessage, keyMatrix, ciphertext);
+    printf("Ciphertext: %s\n", ciphertext);
+    
+    decryptHillCipher(ciphertext, keyMatrix, decryptedText);
+    printf("Decrypted text: %s\n", decryptedText);
+    
+    return 0;
+}
