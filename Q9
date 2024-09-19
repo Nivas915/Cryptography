@@ -1,0 +1,100 @@
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+
+#define MATRIX_SIZE 5
+
+void formatText(char *text) {
+    int length = strlen(text);
+    for (int i = 0; i < length; i++) {
+        if (text[i] == ' ') {
+            memmove(&text[i], &text[i + 1], length - i);
+            length--;
+            i--;
+        }
+    }
+    for (int i = 0; i < length; i++) {
+        text[i] = toupper(text[i]);
+        if (text[i] == 'J') {
+            text[i] = 'I';
+        }
+    }
+    if (length % 2 != 0) {
+        memmove(&text[length], &text[length - 1], 1);
+        text[length] = 'X';
+        text[length + 1] = '\0';
+    }
+}
+
+void generatePlayfairMatrix(const char *key, char matrix[MATRIX_SIZE][MATRIX_SIZE]) {
+    int used[26] = {0};
+    int k = 0;
+    
+    for (int i = 0; i < strlen(key); i++) {
+        char c = toupper(key[i]);
+        if (c == 'J') c = 'I';
+        if (isalpha(c) && !used[c - 'A']) {
+            matrix[k / MATRIX_SIZE][k % MATRIX_SIZE] = c;
+            used[c - 'A'] = 1;
+            k++;
+        }
+    }
+
+    for (char c = 'A'; c <= 'Z'; c++) {
+        if (c == 'J') continue;
+        if (!used[c - 'A']) {
+            matrix[k / MATRIX_SIZE][k % MATRIX_SIZE] = c;
+            k++;
+        }
+    }
+}
+
+void decryptPlayfair(const char *ciphertext, const char matrix[MATRIX_SIZE][MATRIX_SIZE], char *plaintext) {
+    int length = strlen(ciphertext);
+    for (int i = 0; i < length; i += 2) {
+        char a = ciphertext[i];
+        char b = ciphertext[i + 1];
+        int row1, col1, row2, col2;
+
+        for (row1 = 0; row1 < MATRIX_SIZE; row1++) {
+            for (col1 = 0; col1 < MATRIX_SIZE; col1++) {
+                if (matrix[row1][col1] == a) break;
+            }
+            if (col1 < MATRIX_SIZE) break;
+        }
+
+        for (row2 = 0; row2 < MATRIX_SIZE; row2++) {
+            for (col2 = 0; col2 < MATRIX_SIZE; col2++) {
+                if (matrix[row2][col2] == b) break;
+            }
+            if (col2 < MATRIX_SIZE) break;
+        }
+
+        if (row1 == row2) {
+            plaintext[i] = matrix[row1][(col1 - 1 + MATRIX_SIZE) % MATRIX_SIZE];
+            plaintext[i + 1] = matrix[row2][(col2 - 1 + MATRIX_SIZE) % MATRIX_SIZE];
+        } else if (col1 == col2) {
+            plaintext[i] = matrix[(row1 - 1 + MATRIX_SIZE) % MATRIX_SIZE][col1];
+            plaintext[i + 1] = matrix[(row2 - 1 + MATRIX_SIZE) % MATRIX_SIZE][col2];
+        } else {
+            plaintext[i] = matrix[row1][col2];
+            plaintext[i + 1] = matrix[row2][col1];
+        }
+    }
+    plaintext[length] = '\0';
+}
+
+int main() {
+    char key[] = "KEYWORD"; 
+    char ciphertext[] = "KXJEY UREBE ZWEHE WRYTU HEYFS KREHE GOYFI WTTTU OLKSY CAJPO BOTEI ZONTX BYBNT GONEY CUZWR GDSON SXBOU YWRHE BAAHY USEDQ";
+    char plaintext[MAX_LEN];
+    char matrix[MATRIX_SIZE][MATRIX_SIZE];
+
+    formatText(ciphertext);
+    generatePlayfairMatrix(key, matrix);
+    decryptPlayfair(ciphertext, matrix, plaintext);
+
+    printf("Decrypted message: %s\n", plaintext);
+
+    return 0;
+}
